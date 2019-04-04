@@ -1,0 +1,12 @@
+name: temp
+title: temp
+username:
+account: flyboy
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 817274
+bundleId: 1979383
+url: https://flyboy.shinyapps.io/temp/
+when: 1554140065.9832
+asMultiple: FALSE
+asStatic: FALSE
