@@ -5,8 +5,8 @@ account: flyboy
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 817274
-bundleId: 1979383
+bundleId: 2009802
 url: https://flyboy.shinyapps.io/temp/
-when: 1554140065.9832
+when: 1555248554.60491
 asMultiple: FALSE
 asStatic: FALSE
