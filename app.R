@@ -1,10 +1,9 @@
 library(shiny)
 library(shinythemes)
 
-source("DTedit.R")
-source("transaction.R")
-source("supplier.R")
-source("dbCon.R")
+source("modules/utils/DTedit.R")
+source("modules/purchaseSales/purSale.R")
+source("modules/supplier/supplier.R")
 
 ###
 # Dashboard using default Shiny UI 
@@ -57,32 +56,85 @@ ui<- tagList(
 
 server <- function(input, output, session) {
   
-  data_inventory = dbReadTable(con,"inventory")
-  data_supplier = dbReadTable(con,"supplier")
+  source("modules/utils/dbCon.R")
+  
+  data_inventory = dbReadTable(con, "inventory")
+  data_supplier = dbReadTable(con, "supplier")
+  data_purchase = dbReadTable(con, "purchase")
+  data_sales = dbReadTable(con, "sales")
+  
+  dbDisconnect(con)
   
   dtedit(input, output, "show_inventory", data_inventory,
          show.insert = F,
          show.update = F,
          show.copy = F,
-         callback.delete = deleteInDB
-         )
+         callback.delete = deleteInDB)
+  
   dtedit(input, output, "show_supplier", data_supplier,
          show.insert = F,
          show.copy = F,
          callback.update = NULL,
          callback.delete = deleteInDB)
   
-  deleteInDB = function(data, row){
-    print(data_inventory[-row,])
-    # dbExecute(con,paste0("UPDATE"))
-    return(data_inventory[-row,])
+  dtedit(input, output, "show_sales", data_sales,
+         show.insert = F,
+         show.update = F,
+         show.copy = F,
+         callback.delete = deleteInDB)
+  
+  dtedit(input, output, "show_purchase", data_purchase,
+         show.insert = F,
+         show.update = F,
+         show.copy = F,
+         callback.delete = deleteInDB)
+  
+  deleteInDB = function(data, row, table = "inventory"){
+    
+    # print(table)
+    # 
+    # switch (table,
+    #   "inv" = {
+    #     dat = data_inventory
+    #     sql = paste0('delete from inventory where "ITEM_NAME" = \'',data_inventory[row,]["ITEM_NAME"],"'")
+    #     },
+    #   "sal" = {
+    #     dat = data_sales
+    #     sql = paste0('delete from inventory where "InvoiceNo" = \'',data_sales[row,]["InvoiceNo"],"'")
+    #     },
+    #   "sup" = {
+    #     dat = data_supplier
+    #     sql = paste0('delete from inventory where "Name" = \'',data_supplier[row,]["Name"],"'")
+    #     },
+    #   "pur" = {
+    #     dat = data_purchase
+    #     sql = paste0('delete from inventory where "InvoiceNo" = \'',data_purchase[row,]["InvoiceNo"],"'")
+    #     }
+    # )
+    # print(sql)
+    
+    return(data[-row,])
   }
   
+  # deleteInSupplier = function(data, row){
+  #   # dbExecute(con, paste0('delete from supplier where "Name" = \'',data_inventory[row,]["Name"],"'"))
+  #   return(data_inventory[-row,])
+  # }
+  
   # Purchase Buttons
-  observeEvent(input$pur_submit, pur_submit_form_button(session, input, output))
+  observeEvent(input$pur_submit, pur_submit_button(session, input, output))
+  # observeEvent(input$pur_submit, pur_submitFinal_button(session, input, output))
   observeEvent(input$pur_reset_all, pur_reset_all_button(session, input, output))
   observeEvent(input$pur_reset_product, pur_reset_product_button(session, input, output))
   observeEvent(input$pur_reset_transaction, pur_reset_transaction_button(session, input, output))
+  
+  # Sales Buttons
+  observeEvent(input$sal_submit, sal_submit_button(session, input, output))
+  # observeEvent(input$sal_submit, sal_submitFinal_button(session, input, output))
+  observeEvent(input$sal_reset_all, sal_reset_all_button(session, input, output))
+  observeEvent(input$sal_reset_product, sal_reset_product_button(session, input, output))
+  observeEvent(input$sal_reset_transaction, sal_reset_transaction_button(session, input, output))
+  observeEvent(input$sal_reset_custDets, sal_reset_custDets_button(session, input, output))
   
   # Supplier Buttons
   observeEvent(input$supplier_reset, supplier_reset_button(session, input, output))
