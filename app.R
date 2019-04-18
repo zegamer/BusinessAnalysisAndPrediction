@@ -1,5 +1,6 @@
 library(shiny)
 library(shinythemes)
+library(shinyjs)
 
 source("modules/utils/DTedit.R")
 source("modules/purchaseSales/purSale.R")
@@ -10,6 +11,7 @@ source("modules/supplier/supplier.R")
 ###
 
 ui<- tagList(
+    useShinyjs(),
     navbarPage(
     theme = shinytheme("flatly"),
     "BA & P",
@@ -58,79 +60,67 @@ server <- function(input, output, session) {
   
   source("modules/utils/dbCon.R")
   
-  data_inventory = dbReadTable(con, "inventory")
+  # data_inventory = dbReadTable(con, "inventory")
   data_supplier = dbReadTable(con, "supplier")
   data_purchase = dbReadTable(con, "purchase")
   data_sales = dbReadTable(con, "sales")
   
   dbDisconnect(con)
   
-  dtedit(input, output, "show_inventory", data_inventory,
-         show.insert = F,
-         show.update = F,
-         show.copy = F,
-         callback.delete = deleteInDB)
+  # dtedit(input, output, "show_inventory", data_inventory,
+  #        show.insert = F,
+  #        show.update = F,
+  #        show.copy = F,
+  #        callback.delete = deleteInInventory)
   
   dtedit(input, output, "show_supplier", data_supplier,
          show.insert = F,
          show.copy = F,
          callback.update = NULL,
-         callback.delete = deleteInDB)
-  
+         callback.delete = deleteInSales)
+
   dtedit(input, output, "show_sales", data_sales,
          show.insert = F,
          show.update = F,
          show.copy = F,
-         callback.delete = deleteInDB)
-  
+         callback.delete = deleteInSales)
+
   dtedit(input, output, "show_purchase", data_purchase,
          show.insert = F,
          show.update = F,
          show.copy = F,
-         callback.delete = deleteInDB)
-  
-  deleteInDB = function(data, row, table = "inventory"){
-    
-    # print(table)
-    # 
-    # switch (table,
-    #   "inv" = {
-    #     dat = data_inventory
-    #     sql = paste0('delete from inventory where "ITEM_NAME" = \'',data_inventory[row,]["ITEM_NAME"],"'")
-    #     },
-    #   "sal" = {
-    #     dat = data_sales
-    #     sql = paste0('delete from inventory where "InvoiceNo" = \'',data_sales[row,]["InvoiceNo"],"'")
-    #     },
-    #   "sup" = {
-    #     dat = data_supplier
-    #     sql = paste0('delete from inventory where "Name" = \'',data_supplier[row,]["Name"],"'")
-    #     },
-    #   "pur" = {
-    #     dat = data_purchase
-    #     sql = paste0('delete from inventory where "InvoiceNo" = \'',data_purchase[row,]["InvoiceNo"],"'")
-    #     }
-    # )
-    # print(sql)
-    
+         callback.delete = deleteInSales)
+
+  deleteInSales = function(data, row){
+    # data_sales = data[-row,]
     return(data[-row,])
   }
   
+  # deleteInInventory = function(data, row){
+  #   data_inventory = data[-row,]
+  #   return(data_inventory)
+  # }
+  
   # deleteInSupplier = function(data, row){
-  #   # dbExecute(con, paste0('delete from supplier where "Name" = \'',data_inventory[row,]["Name"],"'"))
-  #   return(data_inventory[-row,])
+  #   data_supplier = data[-row,]
+  #   return(data_supplier)
+  # }
+  # 
+  # deleteInPurchase = function(data, row){
+  #   data_purchase = data[-row,]
+  #   return(data_purchase)
   # }
   
   # Purchase Buttons
+  observeEvent(input$pur_verify, pur_verify_button(session, input, output))
   observeEvent(input$pur_submit, pur_submit_button(session, input, output))
-  # observeEvent(input$pur_submit, pur_submitFinal_button(session, input, output))
   observeEvent(input$pur_reset_all, pur_reset_all_button(session, input, output))
   observeEvent(input$pur_reset_product, pur_reset_product_button(session, input, output))
   observeEvent(input$pur_reset_transaction, pur_reset_transaction_button(session, input, output))
   
   # Sales Buttons
+  observeEvent(input$sal_verify, sal_verify_button(session, input, output))
   observeEvent(input$sal_submit, sal_submit_button(session, input, output))
-  # observeEvent(input$sal_submit, sal_submitFinal_button(session, input, output))
   observeEvent(input$sal_reset_all, sal_reset_all_button(session, input, output))
   observeEvent(input$sal_reset_product, sal_reset_product_button(session, input, output))
   observeEvent(input$sal_reset_transaction, sal_reset_transaction_button(session, input, output))

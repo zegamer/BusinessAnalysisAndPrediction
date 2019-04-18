@@ -97,7 +97,9 @@ form_sale = function(input, output){
                          fluidRow(
                            column(width = 6,
                                   tags$label("Sales price : ", `for`="sal_rateSum"),
-                                  textOutput("sal_rateSum", inline = TRUE),br()
+                                  textOutput("sal_rateSum", inline = TRUE),br(),
+                                  tags$label("Price with GST : ", `for`="sal_priceSum"),
+                                  textOutput("sal_priceSum", inline = TRUE)
                                   
                            ),
                            column(width = 6,
@@ -117,9 +119,8 @@ form_sale = function(input, output){
                          hr(),
                          fluidRow(
                            column(width = 2,
-                                  # shinyjs::showElement(actionButton("sal_submit", "Verify", class = "btn btn-primary")),
-                                  # shinyjs::hideElement(actionButton("sal_submitFinal", "Submit", class = "btn btn-primary")),
-                                  actionButton("sal_submit", "Verify", class = "btn btn-primary"),
+                                  actionButton("sal_verify", "Verify", class = "btn btn-primary"),
+                                  hidden(actionButton("sal_submit", "Submit", class = "btn btn-primary")),
                                   br()),
                            column(width = 2,
                                   actionButton("sal_reset_all", "Reset"))
@@ -131,8 +132,9 @@ form_sale = function(input, output){
 
 sal_reset_all_button = function(session, input, output){
   updateTabsetPanel(session, "addNewSale", selected = "Product")
-  # shinyjs::toggleElementElement("sal_submit")
-  # shinyjs::toggleElement("sal_submitFinal")
+  
+  toggle("sal_verify")
+  toggle("sal_submit")
   
   sal_reset_product_button(session)
   sal_reset_custDets_button(session)
@@ -171,13 +173,13 @@ sal_reset_custDets_button = function(session, input, output){
 
 sal_reset_transaction_button = function(session, input, output){
   updateTextInput(session,"sal_rate", value = "")
-  updateSelectizeInput(session,"sal_gst", selected = 0)
+  updateSelectizeInput(session,"sal_gst", selected = "18%")
   updateTextAreaInput(session,"sal_desc", value = "")
   updateCheckboxInput(session, "sal_inclGst", value = F)
   updateNumericInput(session, "sal_qty", value = 0)
 }
 
-sal_submit_button = function(session, input, output){
+sal_verify_button = function(session, input, output){
   output$sal_invNoSum = renderText(input$sal_invNo)
   output$sal_hsnSum = renderText(input$sal_hsn)
   output$sal_qtySum = renderText(input$sal_qty)
@@ -205,16 +207,16 @@ sal_submit_button = function(session, input, output){
   output$sal_priceSum = renderText(price)
   output$sal_totAmtSum = renderText(as.numeric(price * as.numeric(input$sal_qty)))
   
-  # shinyjs::toggleElement("sal_submit")
-  # shinyjs::toggleElement("sal_submitFinal")
-  
-  sal_submitFinal_button(session, input, output)
+  toggle("sal_verify")
+  toggle("sal_submit")
 }
 
-sal_submitFinal_button = function(session, input, output){
+sal_submit_button = function(session, input, output){
   # source("modules/utils/dbCon.R")
+  #
+  # prev_qty = as.numeric(dbGetQuery(con, paste0("SELECT \"QUANTITY\" from inventory where \"PRODUCT_ID\"=\'",input$pur_prodID, "'")))
   # 
-  # sql = paste0("INSERT INTO purchase VALUES (",
+  # sql_insert_sales = paste0("INSERT INTO purchase VALUES (",
   #              "'",output$sal_invNoSum,"',",
   #              "'",output$sal_dateSum,"',",
   #              "'",output$sal_prodIDSum,"',",
@@ -228,14 +230,36 @@ sal_submitFinal_button = function(session, input, output){
   #              "'",output$sal_descSum,"'",
   #              ")")
   # 
+  # 
+  # sql_update_inventory = paste0('UPDATE inventory',
+  #                               ' SET "QUANTITY"=\'',prev_qty - as.numeric(output$pur_qtySum),"'",
+  #                               'WHERE "PRODUCT_ID"=\'',output$pur_prodIDSum,"'")
+  # 
   # tryCatch({
-  #   if(dbExecute(con, sql) != 0){
-  #     showModal(modalDialog(title = "Row added successfully", size = "m"))
-  #   }
-  #   rm(sql)
-  #   supplier_reset_button(session, input, output)
+  #   if(is.null(dbGetQuery(con, sql_update_inventory))) {
+  #     if(is.null(dbGetQuery(con, sql_insert_sales)))
+  #     showModal(modalDialog(title = "Records updated successfully", size = "m", fade = T))
+  #   else
+  #     showModal(modalDialog(title = "Error occurred while adding", size = "m", fade = T))
+  # } else
+  #     showModal(modalDialog(title = "Error occurred while adding", size = "m", fade = T))
+  # 
+  #   rm(sql_insert_purchase)
+  #   rm(sql_update_inventory)
+  # 
+  #   pur_reset_all_button(session, input, output)
   # }, finally = {dbDisconnect(con)})
   
-  showModal(modalDialog(title = "Row added successfully", size = "m"))
-  sal_reset_all_button(session, input, output)
+  showModal(modalDialog(title = "Row added successfully",
+                        # br(),
+                        # p(paste("Previous Quantity:",prev_qty)),
+                        # p(paste0("Current Quantity:",prev_qty - as.numeric(input$sal_qty))),
+                        size = "m",
+                        fade = T))
+  
+  # showModal(modalDialog(title = "Row added successfully", size = "m", fade = T))
+  
+  # dbDisconnect(con)
+  
+  sal_reset_all_button(session,input,output)
 }
