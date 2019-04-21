@@ -3,31 +3,30 @@ library(shinythemes)
 library(shinyjs)
 
 source("modules/utils/DTedit.R")
+source("modules/utils/utilFunc.R")
 source("modules/purchaseSales/purSale.R")
 source("modules/supplier/supplier.R")
 
-###
-# Dashboard using default Shiny UI 
-###
-
 ui<- tagList(
     useShinyjs(),
-    navbarPage(
+    navbarPage( id = "navbar",
     theme = shinytheme("flatly"),
     "BA & P",
     tabPanel("Dashboard"
              ),
     tabPanel("Purchase/ Sales",
              navlistPanel(
+                 id = "nav_pursale",
                  widths = c(3,9),
                  tabPanel("New sales entry", addNewSale()),
                  tabPanel("New purchase entry", addNewPurchase()),
                  tabPanel("Show transactions", showTransactions()),
-                 tabPanel("Catalogue", showAll())
+                 tabPanel("Catalogue", showInventory())
              )
     ),
     tabPanel("Suppliers",
              navlistPanel(
+               id = "nav_supplier",
                widths = c(3,9),
                tabPanel("Add new supplier", add_supplier()),
                tabPanel("Show all suppliers", show_supplier())
@@ -35,6 +34,7 @@ ui<- tagList(
     ),
     tabPanel("Prediction",
              navlistPanel(
+               id = "nav_prediction",
                widths = c(3,9),
                tabPanel("Requirements",
                         h1("Requirements")),
@@ -58,60 +58,48 @@ ui<- tagList(
 
 server <- function(input, output, session) {
   
-  source("modules/utils/dbCon.R")
+  navbar_tabs = reactive({
+    input$navbar
+  })
   
-  # data_inventory = dbReadTable(con, "inventory")
-  data_supplier = dbReadTable(con, "supplier")
-  data_purchase = dbReadTable(con, "purchase")
-  data_sales = dbReadTable(con, "sales")
+  nav_pursale_tabs = reactive({
+    input$nav_pursale
+  })
   
-  dbDisconnect(con)
+  nav_supplier_tabs = reactive({
+    input$nav_supplier
+  })
   
-  # dtedit(input, output, "show_inventory", data_inventory,
-  #        show.insert = F,
-  #        show.update = F,
-  #        show.copy = F,
-  #        callback.delete = deleteInInventory)
+  nav_prediction_tabs = reactive({
+    input$navbar
+  })
   
-  dtedit(input, output, "show_supplier", data_supplier,
-         show.insert = F,
-         show.copy = F,
-         callback.update = NULL,
-         callback.delete = deleteInSales)
-
-  dtedit(input, output, "show_sales", data_sales,
-         show.insert = F,
-         show.update = F,
-         show.copy = F,
-         callback.delete = deleteInSales)
-
-  dtedit(input, output, "show_purchase", data_purchase,
-         show.insert = F,
-         show.update = F,
-         show.copy = F,
-         callback.delete = deleteInSales)
-
-  deleteInSales = function(data, row){
-    # data_sales = data[-row,]
-    return(data[-row,])
+  pursale = function(){
+    switch(nav_pursale_tabs(),
+           "Show transactions" = loadPurSaleTable(session, input, output),
+           "Catalogue" = loadCatalogTable(session, input, output)
+    )
   }
   
-  # deleteInInventory = function(data, row){
-  #   data_inventory = data[-row,]
-  #   return(data_inventory)
-  # }
+  supplier = function(){
+    switch(nav_supplier_tabs(),
+           "Show all suppliers" = loadSupplierTable(session, input, output)
+    )
+  }
   
-  # deleteInSupplier = function(data, row){
-  #   data_supplier = data[-row,]
-  #   return(data_supplier)
-  # }
-  # 
-  # deleteInPurchase = function(data, row){
-  #   data_purchase = data[-row,]
-  #   return(data_purchase)
-  # }
-  
+  observe({
+    switch(navbar_tabs(),
+           "Dashboard" = NULL,
+           "Purchase/ Sales" = pursale(),
+           "Suppliers" = supplier(),
+           "Prediction" = NULL,
+           "Preferences" = NULL
+    )
+  })
+
   # Purchase Buttons
+  observeEvent(input$pur_product_next, updateTabsetPanel(session, "addNewPurchase", "Purchase Details"))
+  observeEvent(input$pur_purchase_next, updateTabsetPanel(session, "addNewPurchase", "Summary"))
   observeEvent(input$pur_verify, pur_verify_button(session, input, output))
   observeEvent(input$pur_submit, pur_submit_button(session, input, output))
   observeEvent(input$pur_reset_all, pur_reset_all_button(session, input, output))
@@ -119,6 +107,9 @@ server <- function(input, output, session) {
   observeEvent(input$pur_reset_transaction, pur_reset_transaction_button(session, input, output))
   
   # Sales Buttons
+  observeEvent(input$sal_product_next, updateTabsetPanel(session, "addNewSale", "Customer Details"))
+  observeEvent(input$sal_customer_next, updateTabsetPanel(session, "addNewSale", "Sale Details"))
+  observeEvent(input$sal_sale_next, updateTabsetPanel(session, "addNewSale", "Summary"))
   observeEvent(input$sal_verify, sal_verify_button(session, input, output))
   observeEvent(input$sal_submit, sal_submit_button(session, input, output))
   observeEvent(input$sal_reset_all, sal_reset_all_button(session, input, output))
@@ -128,6 +119,7 @@ server <- function(input, output, session) {
   
   # Supplier Buttons
   observeEvent(input$supplier_reset, supplier_reset_button(session, input, output))
+  observeEvent(input$supplier_verify, supplier_verify_button(session, input, output))
   observeEvent(input$supplier_submit, supplier_submit_button(session, input, output))
   
 }

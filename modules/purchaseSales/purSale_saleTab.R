@@ -5,22 +5,26 @@ form_sale = function(input, output){
                          br(),
                          fluidRow(
                            column(width = 6,
-                                  dateInput("sal_date", label = "Date", format = "dd/mm/yyyy")
+                                  dateInput("sal_date",  label = "Date", format = "dd-mm-yyyy"),
+                                  tags$style(HTML(".datepicker {z-index:99999 !important;}"))
                            ),
                            column(width = 6,
-                                  numericInput("sal_invNo", label = "Invoice Number", value = 0)
+                                  textInput("sal_invNo", label = "Invoice Number")
                            )
                          ),
                          hr(),
                          fluidRow(
                            column(width = 6,
-                                  textInput("sal_prodID", label = "Product ID", placeholder = "Enter product ID"),
-                                  numericInput("sal_hsn", label = "HSN Code", value = 0)
-                           ),
-                           column(width = 6,
-                                  textInput("sal_prodName", label = "Product name", placeholder = "Enter product name"),br(),
-                                  actionButton("sal_reset_product", "Reset")
+                                  textInput("sal_prodID", label = "Product ID", placeholder = "Enter product ID")
                            )
+                         ),
+                         hr(),
+                         fluidRow(
+                           column(width = 2,
+                                  actionButton("sal_product_next", "Next", class = "btn btn-primary"),
+                                  br()),
+                           column(width = 2,
+                                  actionButton("sal_reset_product", "Reset"))
                          )
                 ),
                 tabPanel("Customer Details",
@@ -36,14 +40,20 @@ form_sale = function(input, output){
                            )
                          ),
                          hr(),
-                         actionButton("sal_reset_custDets", "Reset")
+                         fluidRow(
+                           column(width = 2,
+                                  actionButton("sal_customer_next", "Next", class = "btn btn-primary"),
+                                  br()),
+                           column(width = 2,
+                                  actionButton("sal_reset_custDets", "Reset"))
+                         )
                          
                 ),
                 tabPanel("Sale Details",
                          br(),
                          fluidRow(
                            column(width = 4,
-                                  textInput("sal_rate", label = "Sales price/rate", placeholder = "Sales price/rate"),
+                                  numericInput("sal_rate", label = "Sales price/rate", value = 0),
                                   selectizeInput("sal_gst", label = "GST",
                                                  c("18%" = 18,
                                                    "28%" = 28)),
@@ -54,9 +64,15 @@ form_sale = function(input, output){
                            )
                          ),
                          hr(),
-                         numericInput("sal_qty", "Quantity", value = 0),
+                         numericInput("sal_qty", "Quantity", value = 1),
                          hr(),
-                         actionButton("sal_reset_transaction", "Reset")
+                         fluidRow(
+                           column(width = 2,
+                                  actionButton("sal_sale_next", "Next", class = "btn btn-primary"),
+                                  br()),
+                           column(width = 2,
+                                  actionButton("sal_reset_transaction", "Reset"))
+                         )
                 ),
                 tabPanel("Summary",
                          br(),
@@ -133,12 +149,12 @@ form_sale = function(input, output){
 sal_reset_all_button = function(session, input, output){
   updateTabsetPanel(session, "addNewSale", selected = "Product")
   
-  toggle("sal_verify")
-  toggle("sal_submit")
+  sal_reset_product_button(session, input, output, inline = F)
+  sal_reset_custDets_button(session, input, output, inline = F)
+  sal_reset_transaction_button(session, input, output, inline = F)
   
-  sal_reset_product_button(session)
-  sal_reset_custDets_button(session)
-  sal_reset_transaction_button(session)
+  showElement("sal_verify")
+  hideElement("sal_submit")
   
   output$sal_invNoSum = renderText("")
   output$sal_hsnSum = renderText("")
@@ -156,30 +172,112 @@ sal_reset_all_button = function(session, input, output){
   output$sal_custMiscDetsSum = renderText("")
 }
 
-sal_reset_product_button = function(session, input, output){
+sal_reset_product_button = function(session, input, output, inline = T){
   updateNumericInput(session, "sal_invNo", value = 0)
   updateNumericInput(session, "sal_hsn", value = 0)
   updateTextInput(session, "sal_prodName", value = "")
   updateTextInput(session, "sal_prodID", value = "")
   updateDateInput(session, "sal_date", value = as.Date(Sys.Date()))
+  
+  if(inline){
+    showElement("sal_verify")
+    hideElement("sal_submit")
+  }
 }
 
-sal_reset_custDets_button = function(session, input, output){
+sal_reset_custDets_button = function(session, input, output, inline = T){
   updateTextInput(session,"sal_custName", value = "")
   updateTextAreaInput(session,"sal_custAddress", value = "")
   updateNumericInput(session,"sal_custPhone", value = 0)
   updateTextAreaInput(session,"sal_custMiscDets", value = "")
+  
+  if(inline){
+    showElement("sal_verify")
+    hideElement("sal_submit")
+  }
 }
 
-sal_reset_transaction_button = function(session, input, output){
+sal_reset_transaction_button = function(session, input, output, inline = T){
   updateTextInput(session,"sal_rate", value = "")
   updateSelectizeInput(session,"sal_gst", selected = "18%")
   updateTextAreaInput(session,"sal_desc", value = "")
   updateCheckboxInput(session, "sal_inclGst", value = F)
-  updateNumericInput(session, "sal_qty", value = 0)
+  updateNumericInput(session, "sal_qty", value = 1)
+  
+  if(inline){
+    showElement("sal_verify")
+    hideElement("sal_submit")
+  }
+}
+
+getSalesPrices = function(input){
+  price = 0
+  salePrice = as.numeric(input$sal_rate)
+  
+  if(input$sal_inclGst){
+    price = salePrice
+    salePrice = salePrice / (1 + as.numeric(input$sal_gst) / 100)
+  }
+  else {
+    price = salePrice + (salePrice * as.numeric(input$sal_gst) / 100)
+  }
+  
+  totalPrice = price * as.numeric(input$sal_qty)
+  
+  return (c(salePrice, price, totalPrice))
+}
+
+validate_sales = function(session, input, output){
+  
+  test_error = ""
+  
+  
+  if(input$sal_invNo == "")
+    test_error = paste0(test_error,"<li> Invoice Number cannot be empty</li>")
+  
+  if(input$sal_prodID == "")
+    test_error = paste0(test_error,"<li> Product ID cannot be empty</li>")
+  
+  if(input$sal_custName == "")
+    test_error = paste0(test_error,"<li> Customer Name cannot be empty</li>")
+  
+  if(input$sal_custAddress == "")
+    test_error = paste0(test_error,"<li> Customer Address cannot be empty</li>")
+  
+  if(!any(grep("[1-9][0-9]{9}$", input$sal_custPhone)))
+    test_error = paste0(test_error,"<li> Enter a valid phone number</li>")
+  
+  if(!input$sal_gst %in% c(18, 28))
+    test_error = paste0(test_error,"<li> GST rate is unrecognized</li>")
+  
+  if(!is.numeric(input$sal_rate))
+    test_error = paste0(test_error,"<li> Rate of product is invalid</li>")
+  else if(input$sal_rate <= 0)
+    test_error = paste0(test_error,"<li> Rate of product cannot be 0 or less</li>")
+  
+  if(!is.numeric(input$sal_qty))
+    test_error = paste0(test_error,"<li> Quantity is invalid</li>")
+  else if(input$sal_qty < 1)
+    test_error = paste0(test_error,"<li> Quantity cannot be 0 or less</li>")
+  
+  if(test_error == "")
+    return (T)
+  else
+    return (paste0("<ul>", test_error, "</ul>"))
+  
 }
 
 sal_verify_button = function(session, input, output){
+  
+  valid_form = validate_sales(session, input, output)
+  if(valid_form == T){
+    hideElement("sal_verify")
+    showElement("sal_submit")
+  } else{
+    showModal(modalDialog(HTML(paste0("<ul>",valid_form,"</ul>")), title = "Error", size = "m"))
+    return()
+  }
+  
   output$sal_invNoSum = renderText(input$sal_invNo)
   output$sal_hsnSum = renderText(input$sal_hsn)
   output$sal_qtySum = renderText(input$sal_qty)
@@ -192,29 +290,16 @@ sal_verify_button = function(session, input, output){
   output$sal_custPhoneSum = renderText(input$sal_custPhone)
   output$sal_custMiscDetsSum = renderText(input$sal_custMiscDets)
   
-  price = 0
-  salePrice = as.numeric(input$sal_rate)
-  
-  if(input$sal_inclGst){
-    price = salePrice
-    salePrice = salePrice / (1 + as.numeric(input$sal_gst) / 100)
-  }
-  else {
-    price = salePrice + (salePrice * as.numeric(input$sal_gst) / 100)
-  }  
-  
-  output$sal_rateSum = renderText(salePrice)
-  output$sal_priceSum = renderText(price)
-  output$sal_totAmtSum = renderText(as.numeric(price * as.numeric(input$sal_qty)))
-  
-  toggle("sal_verify")
-  toggle("sal_submit")
+  prices = getSalesPrices(input)
+  output$sal_rateSum = renderText(prices[1])
+  output$sal_priceSum = renderText(prices[2])
+  output$sal_totAmtSum = renderText(prices[3])
 }
 
 sal_submit_button = function(session, input, output){
   # source("modules/utils/dbCon.R")
   #
-  # prev_qty = as.numeric(dbGetQuery(con, paste0("SELECT \"QUANTITY\" from inventory where \"PRODUCT_ID\"=\'",input$pur_prodID, "'")))
+  # prev_qty = as.numeric(dbGetQuery(con, paste0("SELECT \"QUANTITY\" from inventory where \"PRODUCT_ID\"=\'",input$sal_prodID, "'")))
   # 
   # sql_insert_sales = paste0("INSERT INTO purchase VALUES (",
   #              "'",output$sal_invNoSum,"',",
@@ -232,7 +317,7 @@ sal_submit_button = function(session, input, output){
   # 
   # 
   # sql_update_inventory = paste0('UPDATE inventory',
-  #                               ' SET "QUANTITY"=\'',prev_qty - as.numeric(output$pur_qtySum),"'",
+  #                               ' SET "QUANTITY"=\'',prev_qty - as.numeric(output$sal_qtySum),"'",
   #                               'WHERE "PRODUCT_ID"=\'',output$pur_prodIDSum,"'")
   # 
   # tryCatch({
@@ -250,6 +335,68 @@ sal_submit_button = function(session, input, output){
   #   pur_reset_all_button(session, input, output)
   # }, finally = {dbDisconnect(con)})
   
+  ##################################################################################
+  # New implementation below
+  ##################################################################################
+  
+  # source("modules/utils/dbCon.R")
+  # 
+  # prev = as.numeric(dbGetQuery(con, paste0("SELECT \"QUANTITY\" from inventory where \"PRODUCT_ID\"=\'",input$pur_prodID, "'")))
+  # 
+  # prev_qty = if(length(prev) == 0) 0 else prev
+  # 
+  # updated_qty = prev_qty + as.numeric(input$pur_qty)
+  # 
+  # prices = getPurchasePrices(input)
+  # 
+  # sql_insert_purchase = paste0("INSERT INTO purchase VALUES (",
+  #                              "'",input$pur_invNo,"',",
+  #                              "'",input$pur_date,"',",
+  #                              "'",input$pur_prodID,"',",
+  #                              "'",input$pur_prodName,"',",
+  #                              prices[2],",",
+  #                              "'",input$pur_supplier,"',",
+  #                              input$pur_qty,",",
+  #                              prices[3],",",
+  #                              "'",input$pur_desc,"')")
+  # 
+  # sql_update_inventory = paste0('UPDATE inventory',
+  #                               ' SET "QUANTITY"=\'', updated_qty, "'",
+  #                               ' WHERE "PRODUCT_ID"=\'', input$pur_prodID,"'")
+  # 
+  # dbWithTransaction(con,
+  # {
+  #   if(any(dim(dbGetQuery(con, paste0('Select * from inventory where "PRODUCT_ID" = \'', input$pur_prodID, "'"))) == 0)){
+  #     print("Product not in inventory")
+  #     print(paste0('Select * from inventory where "PRODUCT_ID" = \'', input$pur_prodID, "'"))
+  #     if(dbExecute(con, sql_insert_purchase) == 1){
+  #       print(sql_insert_purchase)
+  #       showModal(modalDialog("Transaction added successfully!", title = "Success!", size = "m"))
+  #     }
+  #     else{
+  #       showModal(modalDialog("Transaction failed to add", title = "Failed", size = "m"))
+  #       dbBreak()
+  #     }
+  #   } else if(dbExecute(con, sql_update_inventory) == 1){
+  #     print("Item found and updating in inventory")
+  #     print(sql_update_inventory)
+  #     if(dbExecute(con, sql_insert_purchase) == 1){
+  #       print(sql_insert_purchase)
+  #       showModal(modalDialog( br(),
+  #                              p(paste("Previous Quantity:",prev_qty)),
+  #                              p(paste0("Current Quantity:",updated_qty)),
+  #                              title = "Success",
+  #                              size = "m"))
+  #     }
+  #     else{
+  #       showModal(modalDialog("Transaction failed to add", title = "Failed", size = "m"))
+  #       dbBreak()
+  #     }
+  #   }
+  #   
+  #   rm(sql_insert_purchase, sql_update_inventory, sql_insert_inventory)
+  # })
+  
   showModal(modalDialog(title = "Row added successfully",
                         # br(),
                         # p(paste("Previous Quantity:",prev_qty)),
@@ -259,7 +406,7 @@ sal_submit_button = function(session, input, output){
   
   # showModal(modalDialog(title = "Row added successfully", size = "m", fade = T))
   
-  # dbDisconnect(con)
+  dbDisconnect(con)
   
   sal_reset_all_button(session,input,output)
 }
