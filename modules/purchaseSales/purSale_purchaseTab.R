@@ -23,11 +23,10 @@ form_purchase = function(input, output){
                            hr(),
                            fluidRow(
                              column(width = 6,
-                                    textInput("pur_prodID", label = "Product ID", placeholder = "Enter product ID"),
                                     numericInput("pur_hsn", label = "HSN", value = 0)
                              ),
                              column(width = 6,
-                                    textInput("pur_prodName", label = "Product name *", placeholder = "Enter product name")
+                                    textInput("pur_prodName", label = "Product name", placeholder = "Enter product name")
                              )
                            ),
                            hr(),
@@ -85,8 +84,6 @@ form_purchase = function(input, output){
                                     textOutput("pur_invNoSum", inline = TRUE),br()
                              ),
                              column(width = 6,
-                                    tags$label("Product ID : ", `for`="pur_prodIDSum"),
-                                    textOutput("pur_prodIDSum", inline = TRUE),br(),
                                     tags$label("Product Name : ", `for`="pur_prodNameSum"),
                                     textOutput("pur_prodNameSum", inline = TRUE),br(),
                                     tags$label("HSN Code : ", `for`="pur_hsnSum"),
@@ -147,7 +144,6 @@ pur_reset_all_button = function(session, input, output){
   output$pur_qtySum = renderText("")
   output$pur_dateSum = renderText("")
   output$pur_prodNameSum = renderText("")
-  output$pur_prodIDSum = renderText("")
   output$pur_descSum = renderText("")
   output$pur_priceSum = renderText("")
   output$pur_totAmtSum = renderText("")
@@ -159,7 +155,6 @@ pur_reset_product_button = function(session, input, output, inline = T){
   updateTextInput(session, "pur_invNo", value = "")
   updateNumericInput(session, "pur_hsn", value = 0)
   updateTextInput(session, "pur_prodName", value = "")
-  updateTextInput(session, "pur_prodID", value = "")
   updateDateInput(session, "pur_date", value = as.Date(Sys.Date()))
   
   if(inline){
@@ -184,17 +179,17 @@ pur_reset_transaction_button = function(session, input, output, inline = T){
 
 getPurchasePrices = function(input){
   price = 0
-  costPrice = as.numeric(input$pur_rate)
+  costPrice = round(as.numeric(input$pur_rate), 2)
   
   if(input$pur_inclGst){
     price = costPrice
-    costPrice = costPrice / (1 + as.numeric(input$pur_gst) / 100)
+    costPrice = round(costPrice / (1 + as.numeric(input$pur_gst) / 100), 2)
   }
   else {
-    price = costPrice + (costPrice * as.numeric(input$pur_gst) / 100)
+    price = round(costPrice + (costPrice * as.numeric(input$pur_gst) / 100), 2)
   }
   
-  totalPrice = price * as.numeric(input$pur_qty)
+  totalPrice = round(price * as.numeric(input$pur_qty), 2)
   
   return (c(costPrice, price, totalPrice))
 }
@@ -205,25 +200,23 @@ validate_purchase = function(session, input, output){
   
   if(input$pur_invNo == "")
     test_error = paste0(test_error,"<li> Invoice Number cannot be empty</li>")
-  if(input$pur_prodID == "")
-    test_error = paste0(test_error,"<li> Product ID cannot be empty</li>")
   if(input$pur_prodName == "")
     test_error = paste0(test_error,"<li> Product Name cannot be empty</li>")
   
   if(!is.numeric(input$pur_rate))
     test_error = paste0(test_error,"<li> Rate of product is invalid</li>")
   else if(input$pur_rate <= 0)
-    test_error = paste0(test_error,"<li> Rate of product cannot be 0 or less</li>")
+    test_error = paste0(test_error,"<li> Rate of product cannot be less than or 0</li>")
   
   if(!is.numeric(input$pur_qty))
     test_error = paste0(test_error,"<li> Quantity is invalid</li>")
   else if(input$pur_qty < 1)
-    test_error = paste0(test_error,"<li> Quantity cannot be 0 or less</li>")
+    test_error = paste0(test_error,"<li> Quantity cannot be less than or 0</li>")
   
   if(!is.numeric(input$pur_hsn))
     test_error = paste0(test_error,"<li> HSN Code is invalid</li>")
   else if(input$pur_hsn < 1)
-    test_error = paste0(test_error,"<li> HSN Code be 0 or less</li>")
+     test_error = paste0(test_error,"<li> HSN Code cannot be less than or 0</li>")
   
   if(!input$pur_supplier %in% loadSuppliers())
     test_error = paste0(test_error,"<li> Supplier is unregistered</li>")
@@ -254,7 +247,6 @@ pur_verify_button = function(session, input, output){
   output$pur_qtySum = renderText(input$pur_qty)
   output$pur_dateSum = renderText(as.character(input$pur_date))
   output$pur_prodNameSum = renderText(input$pur_prodName)
-  output$pur_prodIDSum = renderText(input$pur_prodID)
   output$pur_descSum = renderText(input$pur_desc)
   output$pur_supplierSum = renderText(input$pur_supplier)
   
@@ -266,8 +258,14 @@ pur_verify_button = function(session, input, output){
 
 pur_submit_button = function(session, input, output){
   source("modules/utils/dbCon.R")
-   
-  prev = as.numeric(dbGetQuery(con, paste0("SELECT \"QUANTITY\" from inventory where \"PRODUCT_ID\"=\'",input$pur_prodID, "'")))
+  
+  if(any(dim(dbGetQuery(con, paste0("SELECT \"InvoiceNo\" from purchase where \"InvoiceNo\"=\'",input$pur_invNo, "' and \"Date\" = '",input$pur_date, "' and \"HSN\" = '",input$pur_hsn, "' and \"ProductName\" = '",input$pur_prodName,"'")))!=0)){
+    shinyalert(text = "An invoice number with this specifications already exists. Either delete that invoice or change the invoice number", title = "Invoice exists", type = "warning")
+    dbDisconnect(con)
+    return()
+  }
+  
+  prev = as.numeric(dbGetQuery(con, paste0("SELECT \"QUANTITY\" from inventory where \"ITEM_NAME\"=\'",input$pur_prodName, "' and \"HSN\" = '", input$pur_hsn,"'")))
   
   prev_qty = if(length(prev) == 0) 0 else prev
   
@@ -278,18 +276,18 @@ pur_submit_button = function(session, input, output){
   sql_insert_purchase = paste0("INSERT INTO purchase VALUES (",
                "'",input$pur_invNo,"',",
                "'",input$pur_date,"',",
-               "'",input$pur_prodID,"',",
-               "'",input$pur_prodName,"',",
-               prices[2],",",
                "'",input$pur_supplier,"',",
+               "'",input$pur_prodName,"',",
+               "'",input$pur_hsn,"',",
+               "'",input$pur_gst,"',",
                input$pur_qty,",",
+               prices[2],",",
                prices[3],",",
                "'",input$pur_desc,"')")
 
   
   sql_insert_inventory = paste0("INSERT INTO inventory VALUES (",
                "'",input$pur_prodName,"',",
-               "'",input$pur_prodID,"',",
                "'",input$pur_hsn,"',",
                prices[1],",",
                as.numeric(input$pur_gst),",",
@@ -301,29 +299,31 @@ pur_submit_button = function(session, input, output){
 
   sql_update_inventory = paste0('UPDATE inventory',
                                 ' SET "QUANTITY"=\'', updated_qty, "'",
-                                ' WHERE "PRODUCT_ID"=\'', input$pur_prodID,"'")
+                                ' WHERE "ITEM_NAME"=\'', input$pur_prodName,"'",
+                                ' AND "HSN" = \'',input$pur_hsn,"'")
   
   dbWithTransaction(con,
   {
-    if(any(dim(dbGetQuery(con, paste0('Select * from inventory where "PRODUCT_ID" = \'', input$pur_prodID, "'"))) == 0)){
+    if(any(dim(dbGetQuery(con, paste0("Select * from inventory where \"ITEM_NAME\"=\'",input$pur_prodName, "' and \"HSN\" = '", input$pur_hsn,"'"))) == 0)){
       dbExecute(con, sql_insert_inventory)
       if(dbExecute(con, sql_insert_purchase) == 1){
-        showModal(modalDialog("Transaction added successfully!", title = "Success!", size = "m"))
+        shinyalert(text = "New product added successfully!", title = "Success!", type = "success")
       }
       else{
-        showModal(modalDialog("Transaction failed to add", title = "Failed", size = "m"))
+        shinyalert(text = "Failed to add. Try again later.", title = "Failed", type = "error")
         dbBreak()
       }
     } else if(dbExecute(con, sql_update_inventory) == 1){
       if(dbExecute(con, sql_insert_purchase) == 1){
-        showModal(modalDialog( br(),
-                               p(paste("Previous Quantity:",prev_qty)),
-                               p(paste0("Current Quantity:",updated_qty)),
-                               title = "Success",
-                               size = "m"))
+        shinyalert( 
+          title = "Success",
+          html = T,
+          text = HTML(paste0("<br/> <p>Previous Quantity : ",prev_qty, "</p><p>Current Quantity : ",updated_qty, "</p>")),
+          type = "success"
+        )
       }
       else{
-        showModal(modalDialog("Transaction failed to add", title = "Failed", size = "m"))
+        shinyalert(text = "Transaction failed to add", title = "Failed", type = "error")
         dbBreak()
       }
     }
@@ -332,6 +332,5 @@ pur_submit_button = function(session, input, output){
   })
   
   dbDisconnect(con)
-  
   pur_reset_all_button(session,input,output)
 }

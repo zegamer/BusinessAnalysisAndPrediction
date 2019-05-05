@@ -1,41 +1,29 @@
 source("modules/purchaseSales/purSale_purchaseTab.R")
 source("modules/purchaseSales/purSale_saleTab.R")
 
-
 loadCatalogTable = function(session, input, output){
-  if(!exists("data_inventory")){
-    source("modules/utils/dbCon.R")
-    data_inventory = dbReadTable(con, "inventory")
-    dbDisconnect(con)
-  }
+  source("modules/utils/dbCon.R")
+  data_inventory = dbReadTable(con, "inventory")
+  dbDisconnect(con)
   
   output$show_inventory <- renderDataTable({
     data_inventory
   })
-  # dtedit(input, output, "show_inventory", is.df.empty(data_inventory),
-  #        show.update = F,
-  #        show.insert = F,
-  #        show.copy = F,
-  #        show.delete = F)
 }
 
 loadPurSaleTable = function(session, input, output){
-  if(!(exists("data_sales")) || !(exists("data_purchase"))){
-    source("modules/utils/dbCon.R")
-    if(!exists("data_sales"))
-      data_sales = dbReadTable(con, "sales")
-    if(!exists("data_purchase"))
-      data_purchase = dbReadTable(con, "purchase")
-    dbDisconnect(con)
-  }
+  source("modules/utils/dbCon.R")
+  data_sales = dbReadTable(con, "sales")
+  data_purchase = dbReadTable(con, "purchase")
+  dbDisconnect(con)
   
-  dtedit(input, output, "show_purchase", is.df.empty(data_purchase),
+  dtedit(input, output, "show_purchase", data_purchase,
          show.update = F,
          show.insert = F,
          show.copy = F,
          callback.delete = purchase_delete_button)
   
-  dtedit(input, output, "show_sales", is.df.empty(data_sales),
+  dtedit(input, output, "show_sales", data_sales,
          show.update = F,
          show.insert = F,
          show.copy = F,
@@ -63,7 +51,6 @@ showInventory = function(input, output){
     h3("Showing all items"),
     hr(),
     dataTableOutput("show_inventory")
-    # h4("Fetch optimization needed, inventory takes much memory while calling")
   )
 }
 
@@ -81,55 +68,95 @@ showTransactions = function(input, output){
 }
 
 purchase_delete_button = function(data,row){
-  source("modules/utils/dbCon.R")
+  # source("modules/utils/dbCon.R")
+  # 
+  # if(any(dim(dbGetQuery(con, paste0("SELECT \"ITEM_NAME\" from inventory where \"ITEM_NAME\"=\'",data[row,"ProductName"],  "' and \"HSN\" = '",data[row,"HSN"],"'")))==0)){
+  #   shinyalert(text = "Product not in inventory. You need to purchase it first.", title = "Failed", type = "error")
+  #   return(data)
+  # }
   
-  prev = as.numeric(dbGetQuery(con, paste0('SELECT "QUANTITY" FROM inventory WHERE "PRODUCT_ID" = \'',data[row,"ProductID"],"'")))
+  print("Purchase")
+  print(data[row,])
+
+  # prev = as.numeric(dbGetQuery(con, paste0('SELECT "QUANTITY" FROM inventory WHERE "ITEM_NAME" = \'',data[row,"ProductName"],"' and \"HSN\" = '",data[row,"HSN"],"'")))
+  # prev_qty = if(length(prev) == 0) 0 else prev 
+  # updated_qty = prev_qty - as.numeric(if(data[row,"Quantity"] == "") 0 else data[row,"Quantity"])
+  # 
+  # print(prev)
+  # print(prev_qty)
+  # print(updated_qty)
   
-  prev_qty = if(length(prev) == 0) 0 else prev
-  
-  updated_qty = prev_qty - as.numeric(data[row,"Quantity"])
-  
-  dbWithTransaction(con,
-  {
-    if(dbExecute(con, paste0("DELETE from purchase WHERE \"InvoiceNo\" = '", data[row,"InvoiceNo"], "'")) != 1){
-      showModal(modalDialog("Failed to delete in Purchase Table", title = "Error", size = "s"))
-      dbBreak()
-    } else{
-      if(dbExecute(con, paste0("UPDATE inventory SET \"QUANTITY\" = '", updated_qty, "' WHERE \"PRODUCT_ID\" = '",data[row,"ProductID"],"'")) != 1){
-          showModal(modalDialog("Failed to update quantity in Inventory Table", title = "Error", size = "s"))
-          dbBreak()
-      }
-    }
-    dbCommit(con)
-    dbDisconnect(con)
-    return (data[-row,])
-  })
-  dbDisconnect(con)
+  # if(updated_qty < 0){
+  #   shinyalert(type = "warning",
+  #              text = HTML(paste0("<p>Product quantity is insufficient</p>",
+  #                          "<p>Available: ",prev_qty,"</p>")),
+  #              title = "Unable to delete",
+  #              html = T)
+  #   
+  #   return (data)
+  # }
+  # else {
+  #   dbWithTransaction(con,
+  #   {
+  #     if(dbExecute(con, paste0("DELETE from purchase WHERE \"InvoiceNo\" = '", data[row,"InvoiceNo"], "' and \"HSN\" = '",data[row,"HSN"],"' and \"ProductName\" = '",data[row,"ProductName"],"'")) != 1){
+  #       shinyalert(title = "Error", text = "Failed to delete in Purchase Table", type = "error")
+  #       dbBreak()
+  #     } else{
+  #       if(dbExecute(con, paste0("UPDATE inventory SET \"QUANTITY\" = '", updated_qty, "' WHERE \"HSN\" = '",data[row,"HSN"],"' and \"ITEM_NAME\" = '",data[row,"ProductName"],"'")) != 1){
+  #           shinyalert(text = "Failed to update quantity in Inventory Table", title = "Error", type = "error")
+  #           dbBreak()
+  #       }
+  #     }
+  #     dbCommit(con)
+  #     dbDisconnect(con)
+  #     return (data[-row,])
+  #   })
+  # }
+  # dbDisconnect(con)
   return (data)
 }
 
 sales_delete_button = function(data,row){
-  source("modules/utils/dbCon.R")
-  dbWithTransaction(con,
-  {
-    if(dbExecute(con, paste0("DELETE from sales WHERE \"InvoiceNo\" = '", data[row,"InvoiceNo"], "'")) != 1){
-      showModal(modalDialog("Failed to delete in Sales Table", title = "Error", size = "s"))
-      dbBreak()
-    } else{
-      if(!any(is.data.frame((prev_qty = as.numeric(dbGetQuery(con, paste0('SELECT "QUANTITY" FROM inventory WHERE "PRODUCT_ID" = \'',data[row,"ProductID"],"'"))))))){
-        if(dbExecute(con, paste0("UPDATE inventory SET \"QUANTITY\" = '",prev_qty + as.numeric(data[row,"Quantity"]), "' WHERE \"PRODUCT_ID\" = '",data[row,"ProductID"],"'")) != 1){
-          showModal(modalDialog("Failed to update quantity in Inventory Table", title = "Error", size = "s"))
-          dbBreak()
-        } else {
-          showModal(modalDialog("Product not found in Inventory", size = "m", title = "Error"))
-          dbBreak()
-        }
-      }
-    }
-    return (data[-row,])
-  })
+  # source("modules/utils/dbCon.R")
+  # 
+  # if(any(dim(dbGetQuery(con, paste0("SELECT \"ITEM_NAME\" from inventory where \"ITEM_NAME\"=\'",data[row,"ProductName"],  "' and \"HSN\" = '",data[row,"HSN"],"'")))==0)){
+  #   shinyalert(text = "Product not in inventory. You need to purchase it first.", title = "Failed", type = "error")
+  #   return(data)
+  # }
   
-  dbDisconnect(con)
-  # return (data)
-  return (data[-row,])
+  print("Sales")
+  print(data[row,])
+    
+  # prev = as.numeric(dbGetQuery(con, paste0('SELECT "QUANTITY" FROM inventory WHERE "ITEM_NAME" = \'',data[row,"ProductName"],"' and \"HSN\" = '",data[row,"HSN"],"'")))
+  # prev_qty = if(length(prev) == 0) 0 else prev
+  # updated_qty = prev_qty + as.numeric(if(data[row,"Quantity"] == "") 0 else data[row,"Quantity"])
+  
+  # if(updated_qty < 0){
+  #   shinyalert(type = "warning",
+  #              text = HTML(paste0("<p>Product quantity is insufficient</p>",
+  #                                 "<p>Available: ",prev_qty,"</p>")),
+  #              title = "Unable to delete",
+  #              html = T)
+  #   
+  #   return (data)
+  # }
+  # else{
+  #   dbWithTransaction(con,
+  #   {
+  #     if(dbExecute(con, paste0("DELETE from sales WHERE \"InvoiceNo\" = '", data[row,"InvoiceNo"], "' and \"HSN\" = '",data[row,"HSN"],"' and \"ProductName\" = '",data[row,"ProductName"],"'")) != 1){
+  #       shinyalert(title = "Error", text = "Failed to delete in Purchase Table", type = "error")
+  #       dbBreak()
+  #     } else{
+  #       if(dbExecute(con, paste0("UPDATE inventory SET \"QUANTITY\" = '", updated_qty, "' WHERE \"ITEM_NAME\" = '", data[row,"ProductName"], "' and \"HSN\" = '",data[row,"HSN"],"'")) != 1){
+  #         shinyalert(text = "Failed to update quantity in Inventory Table", title = "Error", type = "error")
+  #         dbBreak()
+  #       }
+  #     }
+  #     dbCommit(con)
+  #     dbDisconnect(con)
+  #     return (data[-row,])
+  #   })
+  # }
+  # dbDisconnect(con)
+  return (data)
 }

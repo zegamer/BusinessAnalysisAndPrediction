@@ -1,14 +1,20 @@
 library(shiny)
 library(shinythemes)
 library(shinyjs)
+library(shinyalert)
+library(plotly)
 
 source("modules/utils/DTedit.R")
 source("modules/utils/utilFunc.R")
 source("modules/purchaseSales/purSale.R")
 source("modules/supplier/supplier.R")
+source("modules/prediction/calcEOQ.R")
+source("modules/prediction/demandPlanning.r")
 
 ui<- tagList(
     useShinyjs(),
+    useShinyalert(),
+    
     navbarPage( id = "navbar",
     theme = shinytheme("flatly"),
     "BA & P",
@@ -36,12 +42,12 @@ ui<- tagList(
              navlistPanel(
                id = "nav_prediction",
                widths = c(3,9),
-               tabPanel("Requirements",
-                        h1("Requirements")),
-               tabPanel("Sales prediction",
-                        h1("Sales prediction")),
-               tabPanel("Monthly prediction",
-                        h1("Monthly prediction"))
+               tabPanel("Calculate EOQ", eoqUi()),
+               tabPanel("Demand Planning", reqsUi()),
+               tabPanel("Sales Forecast",
+                        h1("Sales Forecast")),
+               tabPanel("Product Analysis",
+                        h1("Product Analysis"))
              )
     ),
     tabPanel("Preferences",
@@ -50,7 +56,7 @@ ui<- tagList(
                       h1("Preferences"),
                       hr(),
                       themeSelector()
-                )
+               )
              )
     )
   )
@@ -107,21 +113,21 @@ server <- function(input, output, session) {
   observeEvent(input$pur_reset_transaction, pur_reset_transaction_button(session, input, output))
   
   # Sales Buttons
-  observeEvent(input$sal_product_next, updateTabsetPanel(session, "addNewSale", "Customer Details"))
-  observeEvent(input$sal_customer_next, updateTabsetPanel(session, "addNewSale", "Sale Details"))
+  observeEvent(input$sal_product_next, updateTabsetPanel(session, "addNewSale", "Sale Details"))
   observeEvent(input$sal_sale_next, updateTabsetPanel(session, "addNewSale", "Summary"))
   observeEvent(input$sal_verify, sal_verify_button(session, input, output))
   observeEvent(input$sal_submit, sal_submit_button(session, input, output))
   observeEvent(input$sal_reset_all, sal_reset_all_button(session, input, output))
   observeEvent(input$sal_reset_product, sal_reset_product_button(session, input, output))
   observeEvent(input$sal_reset_transaction, sal_reset_transaction_button(session, input, output))
-  observeEvent(input$sal_reset_custDets, sal_reset_custDets_button(session, input, output))
   
   # Supplier Buttons
   observeEvent(input$supplier_reset, supplier_reset_button(session, input, output))
   observeEvent(input$supplier_verify, supplier_verify_button(session, input, output))
   observeEvent(input$supplier_submit, supplier_submit_button(session, input, output))
   
+  # Prediction Buttons
+  observeEvent(input$calc, calculateEOQ(session, input, output))
 }
 
 shinyApp(ui, server, onStart = function(){
