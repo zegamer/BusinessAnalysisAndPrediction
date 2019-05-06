@@ -3,13 +3,14 @@ library(shinythemes)
 library(shinyjs)
 library(shinyalert)
 library(plotly)
+library(lubridate)
+library(dplyr)
+library(shinyBS)
 
 source("modules/utils/DTedit.R")
-source("modules/utils/utilFunc.R")
 source("modules/purchaseSales/purSale.R")
 source("modules/supplier/supplier.R")
-source("modules/prediction/calcEOQ.R")
-source("modules/prediction/demandPlanning.r")
+source("modules/prediction/prediction.R")
 
 ui<- tagList(
     useShinyjs(),
@@ -44,10 +45,8 @@ ui<- tagList(
                widths = c(3,9),
                tabPanel("Calculate EOQ", eoqUi()),
                tabPanel("Demand Planning", reqsUi()),
-               tabPanel("Sales Forecast",
-                        h1("Sales Forecast")),
-               tabPanel("Product Analysis",
-                        h1("Product Analysis"))
+               tabPanel("Purchase and Sales Forecast", purSaleFore()),
+               tabPanel("Product Analysis", prodAnlyss())
              )
     ),
     tabPanel("Preferences",
@@ -127,7 +126,8 @@ server <- function(input, output, session) {
   observeEvent(input$supplier_submit, supplier_submit_button(session, input, output))
   
   # Prediction Buttons
-  observeEvent(input$calc, calculateEOQ(session, input, output))
+  observeEvent(input$eoq_calc, calculateEOQ(session, input, output))
+  observeEvent(input$prodAnl_show, work(session, input, output))
 }
 
 shinyApp(ui, server, onStart = function(){

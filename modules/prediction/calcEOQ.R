@@ -6,7 +6,7 @@ eoqUi = function(input){
     numericInput("demand", label = "Demand in units", value = 0),
     numericInput("order", label = "Order cost" , value = 0),
     numericInput("holding", label = "Holding cost", value = 0),
-    actionButton("calc", "Calculate", class = "btn btn-primary"),
+    actionButton("eoq_calc", "Calculate", class = "btn btn-primary"),
     hr(),
     br(),
     tags$label("EOQ result: ", `for` = "eoqUnits"),

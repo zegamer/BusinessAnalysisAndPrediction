@@ -98,8 +98,6 @@ validate_supplier = function(input){
   
   if(!any(grep("^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$", input$sup_gstNo)))
     test_error = paste0(test_error,"<li> Invalid GST Number</li>")
-  if(!any(grep("^([a-zA-Z0-9_\\-\\.]+)@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.)|(([a-zA-Z0-9\\-]+\\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\\]?)$", input$sup_emailId)))
-    test_error = paste0(test_error,"<li> Please enter a proper Email ID</li>")
   if(!any(grep("[1-9][0-9]{9}$", input$sup_phoneNo)))
     test_error = paste0(test_error,"<li> Enter a valid phone number</li>")
   if(!any(grep("^[1-9][0-9]{5}$", input$sup_addrPin)))
@@ -148,9 +146,9 @@ supplier_submit_button = function(session, input, output){
       con,
       {
         if(dbExecute(con, sql) == 1)
-          showModal(modalDialog(title = "Row added successfully", size = "m"))
+          shinyalert(title = "Success", text = "Supplier added", type = "success")
         else{
-          showModal(modalDialog(p("Error uploading to Database. Try Again"), title = "Add Failed", size = "m"))
+          shinyalert(title = "Failed to add", text = "Error uploading to Database. Try Again", type = "error")
           dbBreak()
         }
       }
