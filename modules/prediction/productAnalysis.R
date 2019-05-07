@@ -8,8 +8,7 @@ rm(con)
 prodAnlyss = function(){
   div(
     h3("Product Analysis"),
-    icon("info-circle", lib = "font-awesome"),
-    bsTooltip("tooltip", "Something has to happen"),
+    helpText("Information about Product Analysis"),
     fluidRow(
       column(width = 4,
              selectizeInput("prodAnl_prodName", "Product",

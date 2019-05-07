@@ -1,8 +1,7 @@
 purSaleFore = function(){
   div(
     h3("Sales Forecasting"),
-    icon("info-cirlce", lib = "font-awesome"),
-    bsTooltip("tooltip", "Something has to happen"),
+    helpText("Information about Sales Forecasting"),
     hr(),
     br(),
     h3("Summary"),
@@ -70,7 +69,7 @@ loadForeAll = function(session, output){
 
   output$total_amount = renderPlotly({
     plot_ly(x = sal_df$Date, y = round(sal_df$Amount,2), name = "Sold Amount", type = "bar") %>%
-      add_lines(y = pur_df$Amount, name = "Purchased Amount", type = "bar") %>%
+      add_trace(y = pur_df$Amount, name = "Purchased Amount", type = "bar") %>%
       layout(title = "Sales and Purchase till now",
              xaxis = list(
                title = "Year",
@@ -101,7 +100,7 @@ loadForeAll = function(session, output){
   })
   
   output$total_amount_forecast = renderPlotly({
-    plot_ly(x = fore_x, y = round(nextYearSales,0), type = "bar", name = "Sales") %>%
+    plot_ly(x = fore_x, y = round(nextYearSales,2), type = "bar", name = "Sales") %>%
       add_trace(y = round(nextYearPurchase,0), name = 'Purchase') %>%
       layout(
         title = paste0("Forecast for the next 12 months"),

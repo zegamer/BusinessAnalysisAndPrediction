@@ -2,6 +2,7 @@ eoqUi = function(input){
   
   div(
     h3("Calculate Economic Order Quantity"),
+    helpText("Information about EOQ"),
     hr(),
     numericInput("demand", label = "Demand in units", value = 0),
     numericInput("order", label = "Order cost" , value = 0),

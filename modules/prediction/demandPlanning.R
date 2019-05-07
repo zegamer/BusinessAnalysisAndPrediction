@@ -1,8 +1,7 @@
 demPlans = function(){
   div(
-    h3("Demand Planning"),
-    div(id = "tooltip", icon("info-sign", lib = "font-awesome")),
-    bsTooltip("tooltip", "Something has to happen"),
+    h3('Demand Planning'),
+    helpText("Information about Demand Planning"),
     hr(),
     br(),
     h3("Summary"),
@@ -70,7 +69,7 @@ loadDemandAll = function(session, output){
   
   output$total_quantity = renderPlotly({
     plot_ly(x = sal_df$Date, y = round(sal_df$Quantity,2), name = "Sold Quantities", type = "bar") %>%
-      add_lines(y = round(pur_df$Quantity,2), name = "Purchased Quantities") %>%
+      add_trace(y = round(pur_df$Quantity,2), name = "Purchased Quantities") %>%
       layout(title = "Quantity purchased and sold till now",
              xaxis = list(
                title = "Year",
@@ -80,7 +79,7 @@ loadDemandAll = function(session, output){
              barmode = 'group')
   })
   
-  output$total_quantityseasonality = renderPlotly({
+  output$total_quantity_seasonality = renderPlotly({
     plot_ly(x = sal_df$Date, y = round(salesDecompose$seasonal,0), type = "scatter", mode = "lines+markers", name = "Sales") %>%
       add_trace(y = round(purchaseDecompose$seasonal,0), name = 'Purchase', type = "scatter", mode = "lines") %>%
       layout(
@@ -90,7 +89,7 @@ loadDemandAll = function(session, output){
       )
   })
   
-  output$total_quantitytrends = renderPlotly({
+  output$total_quantity_trends = renderPlotly({
     plot_ly(x = sal_df$Date, y = round(salesDecompose$trend,0), type = "scatter", mode = "lines+markers", name = "Sales") %>%
       add_trace(y = round(purchaseDecompose$trend,0), name = 'Purchase', type = "scatter", mode = "lines") %>%
       layout(
@@ -100,7 +99,7 @@ loadDemandAll = function(session, output){
       )
   })
   
-  output$total_quantityforecast = renderPlotly({
+  output$total_quantity_forecast = renderPlotly({
     plot_ly(x = fore_x, y = round(nextYearSales,0), type = "bar", name = "Sales") %>%
       add_trace(y = round(nextYearPurchase,0), name = 'Purchase') %>%
       layout(
