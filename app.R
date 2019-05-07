@@ -7,20 +7,19 @@ library(lubridate)
 library(dplyr)
 library(shinyBS)
 
+source("modules/dashboard/dashboard.R")
+source("modules/prediction/prediction.R")
 source("modules/utils/DTedit.R")
 source("modules/purchaseSales/purSale.R")
 source("modules/supplier/supplier.R")
-source("modules/prediction/prediction.R")
 
 ui<- tagList(
     useShinyjs(),
     useShinyalert(),
-    
     navbarPage( id = "navbar",
     theme = shinytheme("flatly"),
     "BA & P",
-    tabPanel("Dashboard"
-             ),
+    tabPanel("Dashboard", dashUI()),
     tabPanel("Purchase/ Sales",
              navlistPanel(
                  id = "nav_pursale",
@@ -44,7 +43,7 @@ ui<- tagList(
                id = "nav_prediction",
                widths = c(3,9),
                tabPanel("Calculate EOQ", eoqUi()),
-               tabPanel("Demand Planning", reqsUi()),
+               tabPanel("Demand Planning", demPlans()),
                tabPanel("Purchase and Sales Forecast", purSaleFore()),
                tabPanel("Product Analysis", prodAnlyss())
              )
@@ -76,7 +75,7 @@ server <- function(input, output, session) {
   })
   
   nav_prediction_tabs = reactive({
-    input$navbar
+    input$nav_prediction
   })
   
   pursale = function(){
@@ -92,12 +91,21 @@ server <- function(input, output, session) {
     )
   }
   
+  prediction = function(){
+    switch(nav_prediction_tabs(),
+           "Calculate EOQ" = NULL,
+           "Demand Planning" = loadDemandAll(session, output),
+           "Purchase and Sales Forecast" = loadForeAll(session, output),
+           "Product Analysis" = loadProdAll(session, input, output)
+    )
+  }
+  
   observe({
     switch(navbar_tabs(),
            "Dashboard" = NULL,
            "Purchase/ Sales" = pursale(),
            "Suppliers" = supplier(),
-           "Prediction" = NULL,
+           "Prediction" = prediction(),
            "Preferences" = NULL
     )
   })
@@ -127,7 +135,7 @@ server <- function(input, output, session) {
   
   # Prediction Buttons
   observeEvent(input$eoq_calc, calculateEOQ(session, input, output))
-  observeEvent(input$prodAnl_show, work(session, input, output))
+  observeEvent(input$prodAnl_show, loadProdAll(session, input, output))
 }
 
 shinyApp(ui, server, onStart = function(){
@@ -136,6 +144,7 @@ shinyApp(ui, server, onStart = function(){
              print("Stopped")
               try({
                 dbDisconnect(con)
+                rm(con)
               })
              })
          })
