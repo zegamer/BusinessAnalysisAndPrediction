@@ -1,11 +1,10 @@
 library(shiny)
-library(shinythemes)
+library(shinydashboard)
 library(shinyjs)
 library(shinyalert)
 library(plotly)
 library(lubridate)
 library(dplyr)
-library(shinyBS)
 
 source("modules/dashboard/dashboard.R")
 source("modules/prediction/prediction.R")
@@ -102,7 +101,7 @@ server <- function(input, output, session) {
   
   observe({
     switch(navbar_tabs(),
-           "Dashboard" = NULL,
+           "Dashboard" = dashServer(session, output),
            "Purchase/ Sales" = pursale(),
            "Suppliers" = supplier(),
            "Prediction" = prediction(),
@@ -148,4 +147,3 @@ shinyApp(ui, server, onStart = function(){
               })
              })
          })
-

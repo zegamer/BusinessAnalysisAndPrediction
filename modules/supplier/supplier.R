@@ -162,13 +162,11 @@ supplier_submit_button = function(session, input, output){
 }
 
 loadSupplierTable = function(session, input, output){
-  if(!exists("data_supplier")){
-    source("modules/utils/dbCon.R")
-    data_supplier = dbReadTable(con, "supplier")
-    dbDisconnect(con)
-  }
+  source("modules/utils/dbCon.R")
+  data_supplier = dbReadTable(con, "supplier")
+  dbDisconnect(con)
   
-  dtedit(input, output, "show_supplier", is.df.empty(data_supplier),
+  dtedit(input, output, "show_supplier", data_supplier,
          show.insert = F,
          show.copy = F,
          callback.delete = supplier_delete_button,
