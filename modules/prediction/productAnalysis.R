@@ -1,14 +1,10 @@
-source("modules/utils/dbCon.R")
-sal_df = dbGetQuery(con,'select "ProductName", TO_CHAR("Date" :: DATE, \'yyyy - mm\') as "Date", SUM("Quantity") as "Quantity", SUM("Amount") as "Amount" from sales group by "ProductName", "Date"')
-pur_df = dbGetQuery(con,'select "ProductName", TO_CHAR("Date" :: DATE, \'yyyy - mm\') as "Date", SUM("Quantity") as "Quantity", SUM("Amount") as "Amount" from purchase group by "ProductName", "Date"')
-inv_df = dbGetQuery(con,'select "ITEM_NAME" from inventory')
-dbDisconnect(con)
-rm(con)
-
 prodAnlyss = function(){
   div(
     h3("Product Analysis"),
-    helpText("Information about Product Analysis"),
+    helpText("Demand planning is the process of forecasting the demand for a
+              product or service so it can be produced and delivered more efficiently and to the satisfaction of customers."),
+    hr(),
+    br(),
     fluidRow(
       column(width = 4,
              selectizeInput("prodAnl_prodName", "Product",
@@ -17,12 +13,8 @@ prodAnlyss = function(){
       column(width = 4,
              selectizeInput("prodAnl_years", "Year",
                             choices = loadYears())
-      )
-    ),
-    fluidRow(
-      column(width = 4,
-             actionButton("prodAnl_show", "Show")
-      )
+      ),
+      actionButton("prodAnl_show", "Show")
     ),
     hr(),
     h3("Product Summary"),
@@ -70,6 +62,12 @@ loadYears = function(){
 
 loadProdAll = function(session, input, output){
   
+  source("modules/utils/dbCon.R")
+  sal_df = dbGetQuery(con,'select "ProductName", TO_CHAR("Date" :: DATE, \'yyyy - mm\') as "Date", SUM("Quantity") as "Quantity", SUM("Amount") as "Amount" from sales group by "ProductName", "Date"')
+  pur_df = dbGetQuery(con,'select "ProductName", TO_CHAR("Date" :: DATE, \'yyyy - mm\') as "Date", SUM("Quantity") as "Quantity", SUM("Amount") as "Amount" from purchase group by "ProductName", "Date"')
+  inv_df = dbGetQuery(con,'select "ITEM_NAME" from inventory')
+  dbDisconnect(con)
+  
   row_names = inv_df$ITEM_NAME
   row_names = sort(row_names)
   col_names = pur_df %>% distinct(pur_df$Date)
@@ -116,9 +114,6 @@ loadProdAll = function(session, input, output){
   inpProdName = input$prodAnl_prodName
   inpYear = input$prodAnl_years
   
-  # inpProdName = "Pad-48204000"
-  # inpYear = 2017
-  
   years = paste0(inpYear," - ",sprintf('%02d', 1:12))
   sal_data_quantity = c(1:12)
   pur_data_quantity = c(1:12)
@@ -147,7 +142,7 @@ loadProdAll = function(session, input, output){
   output$total_amount_bar = renderPlotly({
     plot_ly(x = factor(month.name[c(1:12)], levels = month.name[c(1:12)]), y = pur_data_amount, type = "bar", name = 'Purchase') %>%
       add_trace(y = sal_data_amount, name = 'Sales') %>%
-      layout( title = paste0("Amount of ",inpProdName," puchased and sold in ",inpYear),
+      layout( title = paste0("Amount of ",inpProdName," in ",inpYear),
               xaxis = list(title = "Months"),
               yaxis = list(title = "Rupees"),
               barmode = 'group')
@@ -156,7 +151,7 @@ loadProdAll = function(session, input, output){
   output$total_quantity_bar = renderPlotly({
     plot_ly(x = factor(month.name[c(1:12)], levels = month.name[c(1:12)]), y = pur_data_quantity, type = "bar", name = 'Purchase') %>%
       add_trace(y = sal_data_quantity, name = 'Sales') %>%
-      layout( title = paste0("Quantity of ",inpProdName," puchased and sold in ",inpYear),
+      layout( title = paste0("Quantity of ",inpProdName," in ",inpYear),
              xaxis = list(title = "Months"),
              yaxis = list(title = "Units"),
              barmode = 'group')
@@ -186,6 +181,7 @@ loadProdAll = function(session, input, output){
   output$prod_forecast = renderPlotly({
     salesLogHW = HoltWinters(salesTS)
     purchaseLogHW = HoltWinters(purchaseTS)
+    
     nextYearSales <-  stats:::predict.HoltWinters(salesLogHW, n.ahead = 12)
     nextYearPurchase <-  stats:::predict.HoltWinters(purchaseLogHW, n.ahead = 12)
     

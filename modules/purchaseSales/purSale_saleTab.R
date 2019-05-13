@@ -9,7 +9,7 @@ form_sale = function(input, output){
                                   tags$style(HTML(".datepicker {z-index:99999 !important;}"))
                            ),
                            column(width = 6,
-                                  textInput("sal_invNo", label = "Invoice Number")
+                                  numericInput("sal_invNo", label = "Invoice Number", value = 0)
                            )
                          ),
                          hr(),
@@ -35,14 +35,14 @@ form_sale = function(input, output){
                 tabPanel("Sale Details",
                          br(),
                          fluidRow(
-                           column(width = 4,
+                           column(width = 6,
                                   numericInput("sal_rate", label = "Sales price/rate", value = 0),
                                   selectizeInput("sal_gst", label = "GST",
                                                  c("18%" = 18,
                                                    "28%" = 28)),
                                   checkboxInput("sal_inclGst", label = "Inclusive of GST?")
                            ),
-                           column(width = 8,
+                           column(width = 6,
                                   textAreaInput("sal_desc", label = "Sales Description", placeholder = "Sales description (optional)", rows = "5", cols = "50")
                            )
                          ),
@@ -150,7 +150,7 @@ sal_reset_product_button = function(session, input, output, inline = T){
 
 sal_reset_transaction_button = function(session, input, output, inline = T){
   updateTextInput(session,"sal_rate", value = "")
-  updateSelectizeInput(session,"sal_gst", selected = "18%")
+  updateSelectizeInput(session,"sal_gst", selected = 18)
   updateTextAreaInput(session,"sal_desc", value = "")
   updateCheckboxInput(session, "sal_inclGst", value = F)
   updateNumericInput(session, "sal_qty", value = 1)
@@ -181,15 +181,16 @@ getSalesPrices = function(input){
 validate_sales = function(session, input, output){
   
   test_error = ""
-  
-  if(input$sal_invNo == "")
-    test_error = paste0(test_error,"<li> Invoice Number cannot be empty</li>")
-  
+
   if(input$sal_prodName == "")
     test_error = paste0(test_error,"<li> Product Name cannot be empty</li>")
-  
   if(input$sal_custName == "")
     test_error = paste0(test_error,"<li> Customer Name cannot be empty</li>")
+  
+  if(!is.numeric(input$sal_invNo))
+    test_error = paste0(test_error,"<li> Invoice Number cannot be empty</li>")
+  else if(input$sal_invNo <= 0)
+    test_error = paste0(test_error,"<li> Invoice Number cannot be less than or 0</li>")
   
   if(!input$sal_gst %in% c(18, 28))
     test_error = paste0(test_error,"<li> GST rate is unrecognized</li>")

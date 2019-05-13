@@ -1,5 +1,6 @@
 library(shiny)
 library(shinydashboard)
+library(shinythemes)
 library(shinyjs)
 library(shinyalert)
 library(plotly)
@@ -143,7 +144,7 @@ shinyApp(ui, server, onStart = function(){
              print("Stopped")
               try({
                 dbDisconnect(con)
-                rm(con)
+                rm(list = ls(all.names = T))
               })
              })
          })

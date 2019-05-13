@@ -17,7 +17,7 @@ form_purchase = function(input, output){
                                     tags$style(HTML(".datepicker {z-index:99999 !important;}"))
                              ),
                              column(width = 6,
-                                    textInput("pur_invNo", label = "Invoice Number")
+                                    numericInput("pur_invNo", label = "Invoice Number", value = 0)
                              )
                            ),
                            hr(),
@@ -152,7 +152,7 @@ pur_reset_all_button = function(session, input, output){
 }
 
 pur_reset_product_button = function(session, input, output, inline = T){
-  updateTextInput(session, "pur_invNo", value = "")
+  updateNumericInput(session, "pur_invNo", value = 0)
   updateNumericInput(session, "pur_hsn", value = 0)
   updateTextInput(session, "pur_prodName", value = "")
   updateDateInput(session, "pur_date", value = as.Date(Sys.Date()))
@@ -198,11 +198,14 @@ validate_purchase = function(session, input, output){
   
   test_error = ""
   
-  if(input$pur_invNo == "")
-    test_error = paste0(test_error,"<li> Invoice Number cannot be empty</li>")
   if(input$pur_prodName == "")
     test_error = paste0(test_error,"<li> Product Name cannot be empty</li>")
   
+  if(!is.numeric(input$pur_invNo))
+    test_error = paste0(test_error,"<li> Invoice Number cannot be empty</li>")
+  else if(input$pur_invNo <= 0)
+    test_error = paste0(test_error,"<li> Invoice Number cannot be less than or 0</li>")
+    
   if(!is.numeric(input$pur_rate))
     test_error = paste0(test_error,"<li> Rate of product is invalid</li>")
   else if(input$pur_rate <= 0)

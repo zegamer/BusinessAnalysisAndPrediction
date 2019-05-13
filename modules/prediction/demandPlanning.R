@@ -1,7 +1,8 @@
 demPlans = function(){
   div(
     h3('Demand Planning'),
-    helpText("Information about Demand Planning"),
+    helpText("Demand planning is the process of forecasting the demand for a product or service 
+              so it can be produced and delivered more efficiently and to the satisfaction of customers."),
     hr(),
     br(),
     h3("Summary"),
@@ -35,7 +36,6 @@ loadDemandAll = function(session, output){
   sal_df = dbGetQuery(con,'Select "Date", "Quantity" from sales')
   pur_df = dbGetQuery(con,'Select "Date", "Quantity" from purchase')
   dbDisconnect(con)
-  rm(con)
   
   sal_df$Date = as.Date(sal_df$Date, format = "%Y-%m-%d")
   pur_df$Date = as.Date(pur_df$Date, format = "%Y-%m-%d")

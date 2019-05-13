@@ -143,7 +143,7 @@ sales_delete_button = function(data,row){
       dbWithTransaction(con,
       {
         if(dbExecute(con, paste0("DELETE from sales WHERE \"InvoiceNo\" = '", data[row,"InvoiceNo"], "' and \"HSN\" = '",data[row,"HSN"],"' and \"ProductName\" = '",data[row,"ProductName"],"'")) != 1){
-          shinyalert(title = "Error", text = "Failed to delete in Purchase Table", type = "error")
+          shinyalert(title = "Error", text = "Failed to delete in Sales Table", type = "error")
           dbBreak()
         } else{
           if(dbExecute(con, paste0("UPDATE inventory SET \"QUANTITY\" = '", updated_qty, "' WHERE \"ITEM_NAME\" = '", data[row,"ProductName"], "' and \"HSN\" = '",data[row,"HSN"],"'")) != 1){

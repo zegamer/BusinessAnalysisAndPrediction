@@ -1,7 +1,9 @@
 purSaleFore = function(){
   div(
-    h3("Sales Forecasting"),
-    helpText("Information about Sales Forecasting"),
+    h3("Purchase and Sales Forecasting"),
+    helpText("Purchase and Sales forecasting is the process of estimating future purchases and sales.
+              It helps to make informed business decisions, predict short and long-term performance
+              and efficiently allocate resources."),
     hr(),
     br(),
     h3("Summary"),
@@ -35,7 +37,6 @@ loadForeAll = function(session, output){
   sal_df = dbGetQuery(con,'Select "Date", "Amount" from sales')
   pur_df = dbGetQuery(con,'Select "Date", "Amount" from purchase')
   dbDisconnect(con)
-  rm(con)
   
   sal_df$Date = as.Date(sal_df$Date, format = "%Y-%m-%d")
   pur_df$Date = as.Date(pur_df$Date, format = "%Y-%m-%d")
