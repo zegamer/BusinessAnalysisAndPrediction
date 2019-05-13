@@ -1,5 +1,3 @@
-library(RPostgreSQL)
-
 pw = {"madhsaya#$%&"}
   
 con = dbConnect(dbDriver("PostgreSQL"),

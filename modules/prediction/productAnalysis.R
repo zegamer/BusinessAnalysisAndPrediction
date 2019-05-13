@@ -111,8 +111,11 @@ loadProdAll = function(session, input, output){
     i = i + 1
   }
   
-  inpProdName = input$prodAnl_prodName
-  inpYear = input$prodAnl_years
+  inpProdName = if(is.null(input$prodAnl_prodName)) row_names[1] else input$prodAnl_prodName
+  inpYear = if(is.null(input$prodAnl_years)) 2017 else input$prodAnl_years
+  
+  # inpProdName = "Tube-40131010"
+  # inpYear = 2018
   
   years = paste0(inpYear," - ",sprintf('%02d', 1:12))
   sal_data_quantity = c(1:12)
