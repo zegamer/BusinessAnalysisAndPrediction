@@ -107,12 +107,20 @@ server <- function(input, output, session) {
   output$uiLogin <- renderUI({
     if (USER$Logged == FALSE) {
       fluidPage(
-        wellPanel(
-          textInput("userName", "Username"),
-          passwordInput("pass", "Password"),
-          br(),
-          actionButton("Login", "Log in")
+        h3("Login to BA & P"),
+        br(),
+        fluidRow(
+          column(
+            width = 6,
+            wellPanel(
+              textInput("userName", "Username"),
+              passwordInput("pass", "Password"),
+              br(),
+              actionButton("Login", "Log in")
+            )
+          )  
         )
+        
       )
     }
   })

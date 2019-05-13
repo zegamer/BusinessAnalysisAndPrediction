@@ -7,35 +7,25 @@ dashUI = function(){
     fluidRow(
       h3("Product Summary"),
       hr(),
-      br(),
+      br()
+    ),
+    fluidRow(
       column(width = 4,
-             tags$label(`for` = "prodOOSText", "Out of stock : "),
-             textOutput("prodOOSText", inline = T),br(),
-             tags$label(`for` = "prodOOSText", "Low stock : "),
-             textOutput("prodLSText", inline = T), br()
+             uiOutput("prodOOSText"),
+             plotlyOutput("prodOOS")
       ),
-      column(width = 4,
-        h3("Out of stocks"),
-        plotlyOutput("prodOOS")
-      ),
-      column(width = 4,
-        h3("Low stocks"),
-        plotlyOutput("prodLS")
+      column(width = 5,
+             uiOutput("prodLSText"),
+             plotlyOutput("prodLS")
       )
     ),
-    br(),
     br(),
     hr(),
     fluidRow(
       h3("Inventory Summary"),
       hr(),
       br(),
-      fluidRow(
-        plotlyOutput("pie_amount", height = "150%"),
-        hr(),
-        br(),
-        plotlyOutput("pie_quantity", height = "150%")
-      )
+      plotlyOutput("pie")
     )
   )
 }
@@ -46,26 +36,22 @@ dashServer = function(session, output){
   data = dbGetQuery(con,'select "ITEM_NAME", "QUANTITY", "AMOUNT" from inventory')
   dbDisconnect(con)
   
-  output$pie_amount = renderPlotly({
-    plot_ly(data, labels = ~ITEM_NAME, values = ~AMOUNT, name = "Amount", type = 'pie') %>%
-      layout(title = "Amount per product",
+  output$pie = renderPlotly({
+    plot_ly() %>%
+      add_pie(data, labels = data$ITEM_NAME, values = data$AMOUNT, name = "Amount", domain = list(row = 0, column = 0)) %>%
+      add_pie(data, labels = data$ITEM_NAME, values = data$QUANTITY, name = "Quantity", domain = list(row = 0, column = 1))%>%
+      layout(title = "Amount and Quanity per product per product",
+             grid = list(rows = 1, columns = 2),
              xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
              yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
   })
   
-  output$pie_quantity = renderPlotly({
-    plot_ly(data, labels = ~ITEM_NAME, values = ~QUANTITY, name = "Quantity", type = 'pie') %>%
-      layout(title = "Quantity per product",
-             xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
-             yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+  output$prodOOSText = renderUI({
+    h3(paste0('Out of Stocks : ', as.numeric(unname(data %>% filter(QUANTITY <= 0) %>% count()))))
   })
   
-  output$prodOOSText = renderText({
-    as.numeric(unname(data %>% filter(QUANTITY <= 0) %>% count()))
-  })
-  
-  output$prodLSText = renderText({
-    as.numeric(data %>% filter(QUANTITY %in% (1:7)) %>% count())
+  output$prodLSText = renderUI({
+    h3(paste0('Low Stocks : ', as.numeric(data %>% filter(QUANTITY %in% (1:7)) %>% count())))
   })
   
   output$prodOOS = renderPlotly({
