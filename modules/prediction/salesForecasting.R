@@ -106,7 +106,7 @@ loadForeAll = function(session, output){
       layout(
         title = paste0("Forecast for the next 12 months"),
         xaxis = list(title = "Months"),
-        yaxis = list(title = "Units"),
+        yaxis = list(title = "Rupees"),
         barmode = 'group'
       )
   })

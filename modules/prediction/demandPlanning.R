@@ -75,7 +75,7 @@ loadDemandAll = function(session, output){
                title = "Year",
                rangeslider = list(type = "date")
              ),
-             yaxis = list(title = "Rupees"),
+             yaxis = list(title = "Units"),
              barmode = 'group')
   })
   
