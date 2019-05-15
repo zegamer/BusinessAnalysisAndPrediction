@@ -5,11 +5,17 @@ dashUI = function(){
     br(),
     br(),
     fluidRow(
+      h3("Inventory Summary"),
+      hr(),
+      br(),
+      plotlyOutput("pie")
+    ),
+    br(),
+    hr(),
+    fluidRow(
       h3("Product Summary"),
       hr(),
-      br()
-    ),
-    fluidRow(
+      br(),
       column(width = 4,
              uiOutput("prodOOSText"),
              plotlyOutput("prodOOS")
@@ -18,14 +24,6 @@ dashUI = function(){
              uiOutput("prodLSText"),
              plotlyOutput("prodLS")
       )
-    ),
-    br(),
-    hr(),
-    fluidRow(
-      h3("Inventory Summary"),
-      hr(),
-      br(),
-      plotlyOutput("pie")
     )
   )
 }
@@ -40,7 +38,7 @@ dashServer = function(session, output){
     plot_ly() %>%
       add_pie(data, labels = data$ITEM_NAME, values = data$AMOUNT, name = "Amount", domain = list(row = 0, column = 0)) %>%
       add_pie(data, labels = data$ITEM_NAME, values = data$QUANTITY, name = "Quantity", domain = list(row = 0, column = 1))%>%
-      layout(title = "Amount and Quanity per product per product",
+      layout(title = "Amount and Quanity per product",
              grid = list(rows = 1, columns = 2),
              xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
              yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
@@ -58,14 +56,16 @@ dashServer = function(session, output){
     a = data %>% filter(QUANTITY <= 0) %>% select(ITEM_NAME)
     plot_ly(
       type = 'table',
+      columnorder = c(1,2),
+      columnwidth = c(80,170),
       header = list(
-        values = c("<b>Products</b>"),
+        values = c("<b>Sr No</b>", "<b>Products</b>"),
         line = list(color = "black", width = 1),
         fill = list(color = c('black')),
         font = list(size = 14, color = c('white'))
       ),
       cells = list(
-        values = rbind(t(as.matrix(unname(a)))),
+        values = rbind(rownames(a),t(as.matrix(unname(a)))),
         line = list(color = "black", width = 1),
         fill = list(color = c('white')),
         font = list(size = 12)
@@ -76,14 +76,16 @@ dashServer = function(session, output){
     b = data %>% filter(QUANTITY %in% (1:7)) %>% select(ITEM_NAME, QUANTITY)
     plot_ly(
       type = 'table',
+      columnorder = c(1,2,3),
+      columnwidth = c(80,170,80),
       header = list(
-        values = c("<b>Products</b>", "<b>Quantity</b>"),
+        values = c("<b>Sr No</b>", "<b>Products</b>", "<b>Quantity</b>"),
         line = list(color = "black", width = 1),
         fill = list(color = c('black')),
         font = list(size = 14, color = c('white'))
       ),
       cells = list(
-        values = rbind(t(as.matrix(unname(b)))),
+        values = rbind(rownames(b),t(as.matrix(unname(b)))),
         line = list(color = "black", width = 1),
         fill = list(color = c('white')),
         font = list(size = 12)
